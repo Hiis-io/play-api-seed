@@ -1,12 +1,17 @@
-name := """play-http-api-seed"""
+import com.typesafe.sbt.packager.docker.DockerChmodType
+import com.typesafe.sbt.packager.docker.DockerPermissionStrategy
+
+
+name := """play-http-api"""
 organization := "io.hiis"
-
+maintainer := "@hiis-io"
 version := "1.0-SNAPSHOT"
+scalaVersion := "2.12.15"
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val root = (project in file(".")).enablePlugins(PlayScala, AshScriptPlugin)
 scalacOptions ++= Seq("-deprecation", "-language:_", "-Ypartial-unification")
 
-scalaVersion := "2.12.15"
+
 val reactiveMongoVersion = "0.20.13-play28"
 val silhouetteVersion = "7.0.7"
 val playMailerVersion = "8.0.1"
@@ -45,7 +50,6 @@ libraryDependencies ++= Seq(
   "org.webjars" % "swagger-ui" % swaggerUIVersion,
   "io.swagger" % "swagger-core" % "1.6.2",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.11.1",
-  "com.adrianhurt" %% "play-bootstrap" % "1.6.1-P28-B4",
 
   //Misc
   "org.typelevel" %% "cats-core" % catsVersion,
@@ -56,12 +60,22 @@ libraryDependencies ++= Seq(
   ehcache
 )
 
+// Test
 Test / unmanagedResourceDirectories += (baseDirectory.value / "target/web/public/test")
 
+// Docker
+dockerChmodType := DockerChmodType.UserGroupWriteExecute
+dockerPermissionStrategy := DockerPermissionStrategy.CopyChown
+Docker / maintainer := "dev@hiis.io"
+Docker / packageName := "play-http-api"
+Docker / version := sys.env.getOrElse("BUILD_NUMBER", "0")
+Docker / daemonUserUid  := None
+Docker / daemonUser := "daemon"
+dockerExposedPorts := Seq(9000)
+dockerBaseImage := "openjdk:8-jre-alpine"
+dockerRepository := sys.env.get("ecr_repo")
+dockerUpdateLatest := true
+
+
+// Resolvers
 resolvers += "atlassian-maven" at "https://maven.atlassian.com/content/repositories/atlassian-public"
-
-// Adds additional packages into Twirl
-//TwirlKeys.templateImports += "io.hiis.controllers._"
-
-// Adds additional packages into conf/routes
-// play.sbt.routes.RoutesKeys.routesImport += "io.hiis.binders._"

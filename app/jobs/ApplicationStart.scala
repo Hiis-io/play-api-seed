@@ -1,7 +1,6 @@
 package jobs
 
-import akka.actor.ActorSystem
-import com.mohiva.play.silhouette.api.{LoginInfo, Silhouette}
+import com.mohiva.play.silhouette.api.LoginInfo
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.util.PasswordHasherRegistry
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
@@ -12,7 +11,6 @@ import utils.{AdminData, Logger}
 
 import javax.inject._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 
 /**
  * Created by Abanda Ludovic on 12/05/2022.
