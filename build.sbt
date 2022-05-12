@@ -7,7 +7,7 @@ lazy val root = (project in file(".")).enablePlugins(PlayScala)
 scalacOptions ++= Seq("-deprecation", "-language:_", "-Ypartial-unification")
 
 scalaVersion := "2.12.15"
-val reactiveMongoVersion = "1.1.0-play28-RC4"
+val reactiveMongoVersion = "0.20.13-play28"
 val silhouetteVersion = "7.0.7"
 val playMailerVersion = "8.0.1"
 val playJsonVersion = "2.8.2"
@@ -31,6 +31,7 @@ libraryDependencies ++= Seq(
   "io.swagger" %% "swagger-play2" % swaggerPlay2Version,
   "org.webjars" % "swagger-ui" % swaggerUIVersion,
   "org.typelevel" %% "cats-core" % catsVersion,
+  "net.codingwell" %% "scala-guice" % "5.0.2",
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
   specs2 % Test,
   ehcache,
@@ -38,6 +39,8 @@ libraryDependencies ++= Seq(
 )
 
 Test / unmanagedResourceDirectories += (baseDirectory.value / "target/web/public/test")
+
+resolvers += "atlassian-maven" at "https://maven.atlassian.com/content/repositories/atlassian-public"
 
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "io.hiis.controllers._"

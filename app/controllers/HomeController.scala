@@ -1,7 +1,7 @@
 package controllers
 
-import javax.inject._
-import play.api._
+import javax.inject.{Inject, Singleton}
+import io.swagger.annotations.ApiOperation
 import play.api.mvc._
 
 /**
@@ -20,5 +20,12 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
    */
   def index() = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.index())
+  }
+
+  @ApiOperation(value = "", hidden = true)
+  def redirectDocs = Action { implicit request =>
+    Redirect(
+      url = "/assets/lib/swagger-ui/index.html",
+      queryStringParams = Map("url" -> Seq("http://" + request.host + "/swagger.json")))
   }
 }

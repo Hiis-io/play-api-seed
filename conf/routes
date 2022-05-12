@@ -3,6 +3,11 @@
 # https://www.playframework.com/documentation/latest/ScalaRouting
 # ~~~~
 
+# Swagger API
+GET         /swagger.json                                                   controllers.ApiHelpController.getResources
+GET         /docs                                                           controllers.HomeController.redirectDocs
+
+
 # An example controller showing a sample home page
 GET     /                           controllers.HomeController.index()
 
