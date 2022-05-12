@@ -26,7 +26,8 @@ import play.modules.reactivemongo.ReactiveMongoApi
 import repositories.{AuthenticatorRepositoryImpl, ExtendedAuthenticatorRepository}
 import services.{UserService, UserServiceImpl}
 import auth.{CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv}
-import utils.Logger
+import jobs.ApplicationStart
+import utils.{AdminData, Logger}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -34,7 +35,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * Created by Abanda Ludovic on 11/05/2022.
  */
 
-class SilhouetteModule extends AbstractModule with ScalaModule{
+class ApplicationModule extends AbstractModule with ScalaModule{
 
   override def configure() = {
     bind[Silhouette[DefaultEnv]].to[SilhouetteProvider[DefaultEnv]]
@@ -46,6 +47,7 @@ class SilhouetteModule extends AbstractModule with ScalaModule{
     bind[EventBus].toInstance(EventBus())
     bind[Clock].toInstance(Clock())
     bind[ExtendedAuthenticatorRepository].to[AuthenticatorRepositoryImpl]
+    bind(classOf[ApplicationStart]).asEagerSingleton()
   }
 
   @Provides
@@ -153,4 +155,15 @@ class SilhouetteModule extends AbstractModule with ScalaModule{
    */
   @Provides
   def provideAvatarService(httpLayer: HTTPLayer): AvatarService = new GravatarService(httpLayer)
+
+  /**
+   * Provides default platform admin settings.
+   *
+   * @param configuration        The Play configuration.
+   * @return The default admin data settings.
+   */
+  @Provides
+  def provideAdminData(configuration: Configuration): AdminData = {
+    configuration.underlying.as[AdminData]("admin")
+  }
 }

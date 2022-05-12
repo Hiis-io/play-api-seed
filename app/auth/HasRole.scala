@@ -11,6 +11,8 @@ import scala.concurrent.Future
 /**
  * Created by Abanda Ludovic on 11/05/2022.
  */
+
+// Use this if you are using roles to differentiate between users
 case class HasRole(role: UserRole) extends Authorization[User, JWTAuthenticator] {
   override def isAuthorized[B](identity: User, authenticator: JWTAuthenticator)(implicit request: Request[B]) =
     Future.successful(identity.role == role)

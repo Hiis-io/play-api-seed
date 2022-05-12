@@ -32,10 +32,10 @@
   </appender>
 
   <logger name="play" level="INFO" />
-  <logger name="swagger" level="WARN" />
+  <logger name="io.hiis" level="INFO" />
   <logger name="application" level="DEBUG" />
 
-  <root level="INFO">
+  <root level="WARN">
     <appender-ref ref="ASYNCFILE" />
     <appender-ref ref="ASYNCSTDOUT" />
   </root>
