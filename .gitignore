@@ -1,5 +1,6 @@
 logs
 target
+mongo
 /.bsp
 /.idea
 /.idea_modules

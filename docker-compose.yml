@@ -1,0 +1,21 @@
+version: '2'
+services:
+  mongo:
+    image: mongo:3.4.4
+    container_name: mongo
+    hostname: mongo
+    volumes:
+      - ./mongo:/data/db
+    ports:
+      - "27017:27017"
+  play-http-api:
+    image: abanda/play-http-api
+    container_name: play-http-api
+    hostname: play-http-api
+    environment:
+      HOST_NAME: play-http-api
+      MONGODB_URI: mongodb://mongo:27017/local
+    ports:
+      - "9000:9000"
+    depends_on:
+      - mongo
