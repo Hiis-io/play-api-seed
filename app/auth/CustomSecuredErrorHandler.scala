@@ -45,7 +45,7 @@ class CustomSecuredErrorHandler @Inject() (val messagesApi: MessagesApi)
    * @return The result to send to the client.
    */
   override def onNotAuthorized(implicit request: RequestHeader) =
-    produceResponse(Unauthorized, Messages("silhouette.access.denied"))
+    produceResponse(Forbidden, Messages("silhouette.access.denied"))
 
   protected def produceResponse[S <: Status](status: S, msg: String)(
     implicit

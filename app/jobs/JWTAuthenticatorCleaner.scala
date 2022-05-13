@@ -31,7 +31,7 @@ class JWTAuthenticatorCleaner @Inject()(
       msg.append("Total of %s auth tokens(s) were deleted in %s seconds".format(deleted.length, seconds)).append("\n")
       msg.append("=================================\n")
       msg.append("=================================\n")
-      logger.info(msg.toString)
+      logger.debug(msg.toString)
     }.recover {
       case e =>
         msg.append("Couldn't cleanup auth tokens because of unexpected error\n")

@@ -51,7 +51,7 @@ class ApplicationStart @Inject()(
     case None => for {
       _ <- userService.save(admin)
       _ <- authInfoRepository.add(loginInfo, password)
-    } yield logger.info("Admin user created")
-    case Some(_) => Future.successful(logger.info("Admin details available"))
+    } yield logger.debug("Admin user created")
+    case Some(_) => Future.successful(logger.debug("Admin details available"))
   }
 }
