@@ -21,7 +21,11 @@ libraryDependencies ++= {
   Seq(
     //Reactive MongoDB driver
     "org.reactivemongo" %% "play2-reactivemongo" % reactiveMongoVersion,
-
+    // Provide JSON serialization for reactive mongo
+    "org.reactivemongo" %% "reactivemongo-play-json-compat" % "1.0.1-play28",
+    // Provide BSON serialization for reactive mongo
+    "org.reactivemongo" %% "reactivemongo-bson-compat" % "0.20.13",
+    
     //Silhouette authentication library dependencies
     "io.github.honeycomb-cheesecake" %% "play-silhouette" % silhouetteVersion,
     "io.github.honeycomb-cheesecake" %% "play-silhouette-persistence" % silhouetteVersion,
