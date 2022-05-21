@@ -33,6 +33,7 @@ class ApplicationStart @Inject()(
   }
 
   // Use this only if you are using role based authentication and you want to set default admin credentials
+  // NB: Make sure your mongodb instance is already up and running
 
   val loginInfo = LoginInfo(credentialsProvider.id, adminData.username)
   val admin = User(

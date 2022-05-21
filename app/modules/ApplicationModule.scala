@@ -24,7 +24,7 @@ import play.api.Configuration
 import play.api.libs.ws.WSClient
 import play.modules.reactivemongo.ReactiveMongoApi
 import repositories.{AuthenticatorRepositoryImpl, ExtendedAuthenticatorRepository}
-import services.{UserService, UserServiceImpl}
+import services.{TodoService, TodoServiceImpl, UserService, UserServiceImpl, VerificationTokenService, VerificationTokenServiceImpl}
 import auth.{CustomSecuredErrorHandler, CustomUnsecuredErrorHandler, DefaultEnv}
 import jobs.ApplicationStart
 import utils.{AdminData, Logger}
@@ -42,6 +42,8 @@ class ApplicationModule extends AbstractModule with ScalaModule{
     bind[UnsecuredErrorHandler].to[CustomUnsecuredErrorHandler]
     bind[SecuredErrorHandler].to[CustomSecuredErrorHandler]
     bind[UserService].to[UserServiceImpl]
+    bind[TodoService].to[TodoServiceImpl]
+    bind[VerificationTokenService].to[VerificationTokenServiceImpl]
     bind[CacheLayer].to[PlayCacheLayer]
     bind[IDGenerator].toInstance(new SecureRandomIDGenerator())
     bind[EventBus].toInstance(EventBus())
