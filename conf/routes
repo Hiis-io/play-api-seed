@@ -14,9 +14,10 @@ GET         /                                                               cont
 POST        /api/auth/signin                                                controllers.AuthController.authenticate
 POST        /api/auth/signup                                                controllers.AuthController.signUp
 POST        /api/auth/change-password                                       controllers.AuthController.changePassword
-POST        /api/auth/change-user-password                                  controllers.AuthController.changeUserPassword
 GET         /api/auth/logout                                                controllers.AuthController.logout
 GET         /api/auth/user                                                  controllers.AuthController.getUser
+
+POST        /api/auth/admin/change-password                                 controllers.AuthController.changeUserPassword
 
 # Verification
 GET         /api/auth/email/:username                                       controllers.AuthController.sendVerification(username: String)

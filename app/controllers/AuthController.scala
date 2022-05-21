@@ -194,6 +194,8 @@ class AuthController @Inject()(
         dataType = "models.rest.UserPassword",
         paramType = "body")))
   def changeUserPassword() = silhouette.SecuredAction(HasRole(UserRoles.Admin)).async(parse.json[UserPassword]) { implicit request =>
+    //This is just for demonstration purpose.
+    //This shows how you can use the user's role to authorize an actions
     val newPasswordHash = passwordHasherRegistry.current.hash(request.body.newPassword)
     val loginInfo = LoginInfo(CredentialsProvider.ID, request.body.username)
     userService.retrieve(loginInfo).flatMap {
