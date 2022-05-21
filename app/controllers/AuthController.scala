@@ -11,11 +11,15 @@ import models.rest.{SignUp, UserCredentials, UserPassword}
 import models.security._
 import models.silhouette.Token
 import play.api.libs.json.{JsError, Json}
-import play.api.mvc.{AbstractController, ControllerComponents, Result}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Request, Result}
 import repositories.ExtendedAuthenticatorRepository
-import services.UserService
+import services.{UserService, VerificationTokenService}
 import auth.{DefaultEnv, HasRole}
+import models.TokenActions
+import play.api.i18n.{I18nSupport, Messages}
+import play.api.libs.mailer.{Email, MailerClient}
 
+import java.net.URLDecoder
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,15 +29,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 
 @Api(value = "Auth")
-class AuthController @Inject() (
-  components: ControllerComponents,
-  userService: UserService,
-  silhouette: Silhouette[DefaultEnv],
-  credentialsProvider: CredentialsProvider,
-  extendedAuthenticatorRepository: ExtendedAuthenticatorRepository,
-  authInfoRepository: AuthInfoRepository,
-  passwordHasherRegistry: PasswordHasherRegistry,
-  avatarService: AvatarService)(implicit ex: ExecutionContext) extends AbstractController(components) {
+class AuthController @Inject()(
+                                components: ControllerComponents,
+                                userService: UserService,
+                                silhouette: Silhouette[DefaultEnv],
+                                credentialsProvider: CredentialsProvider,
+                                extendedAuthenticatorRepository: ExtendedAuthenticatorRepository,
+                                authInfoRepository: AuthInfoRepository,
+                                passwordHasherRegistry: PasswordHasherRegistry,
+                                avatarService: AvatarService,
+                                mailerClient: MailerClient,
+                                verificationTokenService: VerificationTokenService)(implicit ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
 
   @ApiOperation(value = "Signup new user", response = classOf[User])
@@ -64,29 +70,30 @@ class AuthController @Inject() (
             signUp.lastName,
             None,
             UserRoles.User,
-            true)
+            activated = false)
           val passwordInfo = passwordHasherRegistry.current.hash(signUp.password)
           for {
             avatar <- avatarService.retrieveURL(signUp.email)
             _ <- userService.save(user.copy(avatarURL = avatar))
             _ <- authInfoRepository.add(loginInfo, passwordInfo)
-            authenticator <- silhouette.env.authenticatorService.create(loginInfo)
-            token <- silhouette.env.authenticatorService.init(authenticator)
-            result <- silhouette.env.authenticatorService.embed(
-              token,
-              Ok(Json.toJson(Token(token = token, expiresOn = authenticator.expirationDateTime))))
+            verificationToken <- verificationTokenService.create(TokenActions.ACCOUNT_VERIFICATION, loginInfo)
           } yield {
-            silhouette.env.eventBus.publish(SignUpEvent(user, request))
-            silhouette.env.eventBus.publish(LoginEvent(user, request))
-            result
+            //This should be a dynamic link that contains the account activation token and can be understood by the frontend
+            //The frontend should be able to extract the token from the request
+            //This token can then be sent to the backend inorder to activate the account
+            val url = routes.AuthController.activateAccount(verificationToken.id).absoluteURL()
+
+            mailerClient.send(Email(
+              subject = "Activate your account",
+              from = "dev@hiis.io",
+              to = Seq(URLDecoder.decode(user.email, "UTF-8")),
+              bodyText = Some(views.txt.emails.activateAccount(user, url).body)
+            ))
+            Ok(Json.obj("message" -> "Follow the link sent to your email to verify your account"))
           }
-        case Some(_) => /* user already exists! */
-          Future(Conflict)
+        case Some(_) => Future(Conflict)
       }
-    }.recoverTotal {
-      case error =>
-        Future.successful(BadRequest)
-    }
+    }.recoverTotal(_ => Future.successful(BadRequest))
   }
 
   @ApiOperation(value = "Login and get authentication token", response = classOf[Token])
@@ -110,9 +117,6 @@ class AuthController @Inject() (
           case Some(user) =>
             silhouette.env.authenticatorService
               .create(loginInfo)
-              .map {
-                case authenticator => authenticator
-              }
               .flatMap { authenticator =>
                 silhouette.env.eventBus.publish(LoginEvent(user, request))
                 silhouette.env.authenticatorService
@@ -223,5 +227,42 @@ class AuthController @Inject() (
       _ <- silhouette.env.authenticatorService.discard(request.authenticator, Ok)
       _ <- extendedAuthenticatorRepository.remove(loginInfo)
     } yield Ok
+  }
+
+  @ApiOperation(value = "Resend activation link to user email", response = classOf[String])
+  def sendVerification(username: String) = Action.async { implicit request: Request[AnyContent] =>
+    val loginInfo = LoginInfo(CredentialsProvider.ID, username)
+    userService.retrieve(loginInfo).flatMap {
+      case Some(user) if !user.activated && user.loginInfo.providerID == CredentialsProvider.ID =>
+        verificationTokenService.create(TokenActions.ACCOUNT_VERIFICATION, loginInfo).flatMap { token =>
+          //This should be a dynamic link that contains the account activation token and can be understood by the frontend
+          //The frontend should be able to extract the token from the request
+          //This token can then be sent to the backend inorder to activate the account
+          val url = routes.AuthController.activateAccount(token.id).absoluteURL()
+
+          Future {
+            mailerClient.send(Email(
+              subject = "Activate your account",
+              from = "dev@hiis.io",
+              to = Seq(URLDecoder.decode(user.email, "UTF-8")),
+              bodyText = Some(views.txt.emails.activateAccount(user, url).body)
+            ))
+          }.flatMap(_ => Future.successful(Ok(Json.obj("message" -> "Follow the link sent to your email to verify your account"))))
+        }
+      case None => Future.successful(BadRequest)
+    }
+  }
+
+
+  @ApiOperation(value = "Activate account using activation token sent to email", response = classOf[String])
+  def activateAccount(token: String) = Action.async { implicit request: Request[AnyContent] =>
+    verificationTokenService.find(token).flatMap {
+      case Some(token) if token.action == TokenActions.ACCOUNT_VERIFICATION => userService.retrieve(token.userLoginInfo).flatMap {
+        case Some(user) =>
+          userService.update(user.copy(activated = true)).flatMap(_ => Future.successful(Ok(Json.obj("message" -> "You can now login into your account"))))
+        case _ => Future.successful(BadRequest)
+      }
+      case None => Future.successful(BadRequest)
+    }
   }
 }

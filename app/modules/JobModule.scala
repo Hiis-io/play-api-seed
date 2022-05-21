@@ -9,6 +9,6 @@ import play.api.inject._
  */
 
 class JobModule extends SimpleModule(
-  bind[JWTAuthenticatorCleaner].toSelf.eagerly(), 
+  bind[JWTAuthenticatorCleaner].toSelf.eagerly(),
   bind[VerificationTokenCleaner].toSelf.eagerly()
 )

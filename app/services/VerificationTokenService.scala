@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.language.postfixOps
 
 /**
  * Created by Abanda Ludovic on 21/05/2022.
