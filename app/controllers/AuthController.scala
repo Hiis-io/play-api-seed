@@ -4,10 +4,10 @@ import com.mohiva.play.silhouette.api.exceptions.ProviderException
 import com.mohiva.play.silhouette.api.{LoginEvent, LoginInfo, SignUpEvent, Silhouette}
 import com.mohiva.play.silhouette.api.repositories.AuthInfoRepository
 import com.mohiva.play.silhouette.api.services.{AuthenticatorService, AvatarService}
-import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRegistry}
+import com.mohiva.play.silhouette.api.util.{Clock, Credentials, PasswordHasherRegistry, PasswordInfo}
 import com.mohiva.play.silhouette.impl.providers.CredentialsProvider
 import io.swagger.annotations.{Api, ApiImplicitParam, ApiImplicitParams, ApiOperation}
-import models.rest.{SignUp, UserCredentials, UserPassword}
+import models.rest.{Password, SignUp, UserCredentials, UserPassword}
 import models.security._
 import models.silhouette.Token
 import play.api.libs.json.{JsError, Json}
@@ -41,6 +41,15 @@ class AuthController @Inject()(
                                 mailerClient: MailerClient,
                                 verificationTokenService: VerificationTokenService)(implicit ex: ExecutionContext) extends AbstractController(components) with I18nSupport {
 
+
+  //This endpoint is just for simplicity since it is prone to attacks. You should consider exposing this to trusted frontends only. CORS is a good start but doesn't work well with mobile apps
+  @ApiOperation(value = "Verify if a username is available or not", response = classOf[Boolean])
+  def checkUsername(username: String) = silhouette.UnsecuredAction.async { implicit request =>
+    userService.verifyUsername(username).flatMap {
+      case false => Future.successful(Ok(Json.obj("message" -> "Username can be used")))
+      case true => Future.successful(Conflict(Json.obj("message" -> "Username is taken already")))
+    }
+  }
 
   @ApiOperation(value = "Signup new user", response = classOf[User])
   @ApiImplicitParams(
@@ -84,10 +93,10 @@ class AuthController @Inject()(
             val url = routes.AuthController.activateAccount(verificationToken.id).absoluteURL()
 
             mailerClient.send(Email(
-              subject = "Activate your account",
+              subject = "Welcome",
               from = "dev@hiis.io",
               to = Seq(URLDecoder.decode(user.email, "UTF-8")),
-              bodyText = Some(views.txt.emails.activateAccount(user, url).body)
+              bodyText = Some(views.txt.emails.signUp(user, url).body)
             ))
             Ok(Json.obj("message" -> "Follow the link sent to your email to verify your account"))
           }
@@ -119,18 +128,15 @@ class AuthController @Inject()(
               .create(loginInfo)
               .flatMap { authenticator =>
                 silhouette.env.eventBus.publish(LoginEvent(user, request))
-                silhouette.env.authenticatorService
-                  .init(authenticator)
-                  .flatMap { token =>
-                    silhouette.env.authenticatorService
-                      .embed(
+                silhouette.env.authenticatorService.init(authenticator).flatMap { token =>
+                  silhouette.env.authenticatorService.embed(
+                    token,
+                    Ok(Json.obj(
+                      "user" -> user,
+                      "token" -> Json.toJson(Token(
                         token,
-                        Ok(Json.obj(
-                          "user" -> user,
-                          "token" -> Json.toJson(Token(
-                            token,
-                            expiresOn = authenticator.expirationDateTime)))))
-                  }
+                        expiresOn = authenticator.expirationDateTime)))))
+                }
               }
           case None =>
             Future.successful(NotFound)
@@ -267,4 +273,59 @@ class AuthController @Inject()(
       case None => Future.successful(BadRequest)
     }
   }
+
+  @ApiOperation(value = "Send reset password token to user email", response = classOf[String])
+  def sendPasswordReset(userName: String) = Action.async { implicit request =>
+    val loginInfo = LoginInfo(CredentialsProvider.ID, userName)
+    userService.retrieve(loginInfo).flatMap {
+      case Some(user) =>
+        verificationTokenService.create(TokenActions.RESET_PASSWORD ,user.loginInfo).map { authToken =>
+          //This should be a dynamic link that contains the reset token and can be understood by the frontend
+          //The frontend should be able to extract the token from the request and require the user to enter a new password
+          //This token and new password can then be sent to the backend inorder to change the password
+          val url = routes.AuthController.resetPassword(authToken.id).absoluteURL()
+
+          mailerClient.send(Email(
+            subject = "Password Reset",
+            from = "dev@hiis.io",
+            to = Seq(user.email),
+            bodyText = Some(views.txt.emails.resetPassword(user, url).body)
+          ))
+          Ok(Json.toJson("message" -> Messages("reset.email.sent")))
+        }
+      case None =>
+        //This should always return Ok, since some attackers might use this endpoint to verify which usernames are registered in the system. By retuning anything other than Ok you give them access to that information
+        Future.successful(Ok(Json.toJson("message" -> Messages("reset.email.sent"))))
+    }
+  }
+
+  @ApiOperation(value = "Reset password using token sent to email", response = classOf[String])
+  @ApiImplicitParams(
+    Array(
+      new ApiImplicitParam(
+        value = "Password",
+        required = true,
+        dataType = "models.rest.Password",
+        paramType = "body"
+      )
+    )
+  )
+  def resetPassword(token: String) = Action.async(parse.json) { implicit request =>
+    request.body.validate[Password].map { passwordData =>
+      verificationTokenService.find(token).flatMap {
+        case Some(authToken) if authToken.action == TokenActions.RESET_PASSWORD =>
+          userService.retrieve(authToken.userLoginInfo).flatMap {
+            case Some(user) if user.loginInfo.providerID == CredentialsProvider.ID =>
+              val authInfo = passwordHasherRegistry.current.hash(passwordData.password)
+              authInfoRepository.update[PasswordInfo](user.loginInfo, authInfo).flatMap { _ =>
+                Future.successful(Ok(Json.obj("message" -> "Password reset successful")))
+              }
+            case _ => Future.successful(BadRequest)
+          }
+        case None => Future.successful(BadRequest)
+      }
+    }.recoverTotal(error =>
+      Future.successful(BadRequest))
+  }
+
 }
