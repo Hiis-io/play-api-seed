@@ -11,17 +11,21 @@ GET         /docs                                                           cont
 # An example controller showing a sample home page
 GET         /                                                               controllers.HomeController.redirectDocs
 
-POST        /api/auth/signin                                                controllers.AuthController.authenticate
-POST        /api/auth/signup                                                controllers.AuthController.signUp
-POST        /api/auth/change-password                                       controllers.AuthController.changePassword
-GET         /api/auth/logout                                                controllers.AuthController.logout
-GET         /api/auth/user                                                  controllers.AuthController.getUser
+POST        /api/auth/user/signin                                           controllers.AuthController.authenticate
+POST        /api/auth/user/signup                                           controllers.AuthController.signUp
+POST        /api/auth/user/change-password                                  controllers.AuthController.changePassword
+GET         /api/auth/user/logout                                           controllers.AuthController.logout
+GET         /api/auth/user/user                                             controllers.AuthController.getUser
+POST        /api/auth/user/forgotPassword/send/:username                    controllers.AuthController.sendPasswordReset(username: String)
+POST        /api/auth/user/forgotPassword/reset/:token                      controllers.AuthController.resetPassword(token: String)
+
 
 POST        /api/auth/admin/change-password                                 controllers.AuthController.changeUserPassword
 
 # Verification
-GET         /api/auth/email/:username                                       controllers.AuthController.sendVerification(username: String)
-GET         /api/auth/activate/:token                                       controllers.AuthController.activateAccount(token: String)
+GET         /api/auth/user/verification/send/:username                      controllers.AuthController.sendVerification(username: String)
+GET         /api/auth/user/verification/activate/:token                     controllers.AuthController.activateAccount(token: String)
+GET         /api/auth/user/verification/check/:username                     controllers.AuthController.checkUsername(username: String)
 
 # _TODO_ routes
 GET         /api/todo/get/:id                                               controllers.SampleController.getTodo(id)
