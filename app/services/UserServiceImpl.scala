@@ -28,4 +28,11 @@ class UserServiceImpl @Inject() (val reactiveMongoApi: ReactiveMongoApi)(implici
 
   override def update(user: User): Future[User] = users.flatMap(_.update.one(Json.obj("loginInfo" -> user.loginInfo), user))
     .flatMap(_ => Future.successful(user))
+
+  override def verifyUsername(username: String): Future[Boolean] = {
+    users.flatMap(_.find(Json.obj("username" -> username)).one[User]).flatMap{
+      case Some(_) => Future.successful(true)
+      case _ => Future.successful(false)
+    }
+  }
 }

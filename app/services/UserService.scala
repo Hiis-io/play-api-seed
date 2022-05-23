@@ -15,4 +15,6 @@ trait UserService extends IdentityService[User] {
   def save(user: User): Future[WriteResult]
 
   def update(user: User): Future[User]
+
+  def verifyUsername(username: String): Future[Boolean]
 }
