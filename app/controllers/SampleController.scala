@@ -54,12 +54,7 @@ class SampleController @Inject()(controllerComponents: ControllerComponents,
         value = "User access token",
         required = true,
         dataType = "string",
-        paramType = "header"),
-      new ApiImplicitParam(
-        value = "id",
-        required = true,
-        dataType = "String",
-        paramType = "path")))
+        paramType = "header")))
   def getTodo(id: String) = silhouette.SecuredAction.async { implicit request =>
     todoService.get(id).flatMap {
       case Some(todo) if todo.userID.get == request.identity.id.get => Future.successful(Ok(Json.toJson(todo)))
@@ -76,12 +71,7 @@ class SampleController @Inject()(controllerComponents: ControllerComponents,
         value = "User access token",
         required = true,
         dataType = "string",
-        paramType = "header"),
-      new ApiImplicitParam(
-        value = "id",
-        required = true,
-        dataType = "String",
-        paramType = "path")))
+        paramType = "header")))
   def deleteTodo(id: String) = silhouette.SecuredAction.async { implicit request =>
     todoService.delete(id, request.identity.id.get).flatMap(_ => Future.successful(Ok))
   }

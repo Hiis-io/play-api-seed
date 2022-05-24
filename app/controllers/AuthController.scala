@@ -55,17 +55,11 @@ class AuthController @Inject()(
   @ApiImplicitParams(
     Array(
       new ApiImplicitParam(
-        name = "X-Auth-Token",
-        value = "User access token with Admin access",
-        required = true,
-        dataType = "string",
-        paramType = "header"),
-      new ApiImplicitParam(
         value = "SignUp",
         required = true,
         dataType = "models.rest.SignUp",
         paramType = "body")))
-  def signUp = silhouette.SecuredAction.async(parse.json) { implicit request =>
+  def signUp = silhouette.UnsecuredAction.async(parse.json) { implicit request =>
     request.body.validate[SignUp].map { signUp =>
       val loginInfo = LoginInfo(CredentialsProvider.ID, signUp.identifier)
       userService.retrieve(loginInfo).flatMap {
@@ -143,8 +137,8 @@ class AuthController @Inject()(
         }
       }
       .recover {
-        case _: ProviderException =>
-          Forbidden
+        case error: ProviderException =>
+          Forbidden(s"$error")
       }
   }
 
@@ -175,12 +169,7 @@ class AuthController @Inject()(
         paramType = "header")))
   def getUser() = silhouette.SecuredAction.async { implicit request =>
     userService.retrieve(request.authenticator.loginInfo).flatMap {
-      case Some(user) =>
-        for {
-          _ <- extendedAuthenticatorRepository.removeExpired()
-        } yield {
-          Ok(Json.toJson(user))
-        }
+      case Some(user) => Future.successful(Ok(Json.toJson(user)))
       case _ => Future.successful(NotFound)
     }
   }
@@ -190,12 +179,12 @@ class AuthController @Inject()(
     Array(
       new ApiImplicitParam(
         name = "X-Auth-Token",
-        value = "User access token with Admin access",
+        value = "User access token with admin role",
         required = true,
         dataType = "string",
         paramType = "header"),
       new ApiImplicitParam(
-        value = "SignUp",
+        value = "Password change",
         required = true,
         dataType = "models.rest.UserPassword",
         paramType = "body")))
@@ -223,7 +212,7 @@ class AuthController @Inject()(
         dataType = "string",
         paramType = "header"),
       new ApiImplicitParam(
-        value = "SignUp",
+        value = "Password change",
         required = true,
         dataType = "models.rest.UserPassword",
         paramType = "body")))
@@ -257,7 +246,7 @@ class AuthController @Inject()(
             ))
           }.flatMap(_ => Future.successful(Ok(Json.obj("message" -> "Follow the link sent to your email to verify your account"))))
         }
-      case None => Future.successful(BadRequest)
+      case _ => Future.successful(BadRequest)
     }
   }
 
@@ -327,5 +316,4 @@ class AuthController @Inject()(
     }.recoverTotal(error =>
       Future.successful(BadRequest))
   }
-
 }

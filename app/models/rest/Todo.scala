@@ -1,6 +1,6 @@
 package models.rest
 
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json.{JodaReads, JodaWrites, Json, OFormat, Reads, Writes}
 
 import java.util.UUID
@@ -17,9 +17,7 @@ case class Todo (
                   isCompleted: Boolean = false,
                   userID: Option[String] = None,
                   id: Option[String] = Some(UUID.randomUUID().toString)
-                ) {
-  require(startDate.isAfter(DateTime.now()))
-}
+                )
 
 object Todo {
 

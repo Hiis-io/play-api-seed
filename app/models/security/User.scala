@@ -1,25 +1,25 @@
 package models.security
 
-import com.mohiva.play.silhouette.api.{ Identity, LoginInfo }
+import com.mohiva.play.silhouette.api.{Identity, LoginInfo}
 import models.security.UserRoles.UserRole
-import play.api.libs.json.{ Json, _ }
+import play.api.libs.json.{Json, _}
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /**
  * Created by Abanda Ludovic on 11/05/2022.
  */
 
 case class User(
-  id: Option[String],
-  loginInfo: LoginInfo,
-  username: String,
-  email: String,
-  firstName: String,
-  lastName: String,
-  avatarURL: Option[String],
-  role: UserRole = UserRoles.User,
-  activated: Boolean) extends Identity
+                 id: Option[String],
+                 loginInfo: LoginInfo,
+                 username: String,
+                 email: String,
+                 firstName: String,
+                 lastName: String,
+                 avatarURL: Option[String],
+                 role: UserRole = UserRoles.User,
+                 activated: Boolean) extends Identity
 
 object User {
 
@@ -31,33 +31,17 @@ object User {
 
   implicit object UserWrites extends OWrites[User] {
     def writes(user: User): JsObject =
-      user.id match {
-        case Some(id) =>
-          Json.obj(
-            "_id" -> user.id,
-            "loginInfo" -> Json.obj(
-              "providerID" -> user.loginInfo.providerID,
-              "providerKey" -> user.loginInfo.providerKey),
-            "username" -> user.username,
-            "email" -> user.email,
-            "firstName" -> user.firstName,
-            "lastName" -> user.lastName,
-            "avatarURL" -> user.avatarURL,
-            "role" -> user.role,
-            "activated" -> user.activated)
-        case _ =>
-          Json.obj(
-            "loginInfo" -> Json.obj(
-              "providerID" -> user.loginInfo.providerID,
-              "providerKey" -> user.loginInfo.providerKey),
-            "username" -> user.username,
-            "email" -> user.email,
-            "firstName" -> user.firstName,
-            "lastName" -> user.lastName,
-            "avatarURL" -> user.avatarURL,
-            "role" -> user.role,
-            "activated" -> user.activated)
-      }
+      Json.obj(
+        "loginInfo" -> Json.obj(
+          "providerID" -> user.loginInfo.providerID,
+          "providerKey" -> user.loginInfo.providerKey),
+        "username" -> user.username,
+        "email" -> user.email,
+        "firstName" -> user.firstName,
+        "lastName" -> user.lastName,
+        "avatarURL" -> user.avatarURL,
+        "role" -> user.role,
+        "activated" -> user.activated)
   }
 
   implicit object UserReads extends Reads[User] {
