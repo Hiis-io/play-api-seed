@@ -16,7 +16,7 @@ import reactivemongo.play.json.collection._
 
 class TodoServiceImpl @Inject() (val reactiveMongoApi: ReactiveMongoApi)(implicit ex: ExecutionContext) extends TodoService {
 
-  def todos = reactiveMongoApi.database.map(_.collection[JSONCollection]("users"))
+  def todos = reactiveMongoApi.database.map(_.collection[JSONCollection]("todos"))
 
   /**
    * Save a user _Todo_ object in database
